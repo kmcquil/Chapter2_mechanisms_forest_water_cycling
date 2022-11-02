@@ -1,0 +1,4 @@
+# Chapter 2: Quantify changes in lateral hydrologic connectivity 
+This repository contains all scripts used in Chapter 2 analysis. 
+
+We integrated long-term remotely sensed vegetation and in-situ streamflow measurements to understand impacts of global change on hydrologic partitioning in humid, temperate forests. Redistributions along hydrologic flow paths are controlled by interactions between vegetation, topography, and climate. Changes in lateral flow from upslope to downslope due to increasing vegetation water use can stress riparian vegetation and reduce baseflow. Despite this, the impacts of ongoing climate change on lateral hydrologic connectivity, and how that translates to shifts in freshwater availability, remains unclear. We investigated the trends and drivers of lateral hydrologic connectivity in humid temperate forest headwater catchments and connected these findings to streamflow dynamics at larger scales. 	
