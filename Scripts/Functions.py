@@ -1,9 +1,4 @@
-# Function names are all lower case and have _ between words 
-# Variable names are also all lower case and have _ between words 
-# Constants should be capitalized with _ between words 
-# Classes should be CamelCase 
-
-#  Collection of functions used in the ET + HVG analysis 
+#  Collection of functions used in the NDVI + HVG analysis 
 import os
 import re
 import geopandas as gpd
@@ -546,7 +541,8 @@ def catchment_ndvi_ratio_ts(boundary, wsid, uca, ndvi_file_list):
     return('finished ' + str(wsid))
 
 
-    # now find the trend using a simple linear regression for each catchment and put that into a dataframe with columns 
+# now find the trend using a simple linear regression for each catchment and put that into a dataframe with columns 
+
 def trend_ratio_ndvi(file):
     # Calculate the annual trend in the ratio of down:up slope ndvi and the trend in SD 
     # Input: 
@@ -696,94 +692,3 @@ def new_catchment_ndvi_ratio_ts(boundary, wsid, uca, ndvi_file_list):
     df.to_csv(os.path.join(ndvi_path, "ratio_ndvi_" + str(wsid) + ".csv"))
         
     return
-
-
-
-
-def catchment_et_metrics(boundary, wsid, uca, et_file_list):
-    # Summarize upslope and downslope ndvi + the ratio for all images with no missing data and save to a csv for the given catchment
-    # Inputs 
-    #   boundary= catchment boundary 
-    #   wsid = catchment ID 
-    #   dem = DEM in the original resolution cropped + buffer around the catchment 
-    #   ndvi_file_list = list of all potential ET to use  
-    # Outputs 
-    #   a csv is saved with the average, sd, average upslope, downslope, ratio downslope:upslope ndvi for every image with no missing data for a given catchment 
-   
-    # create uca folder with the wsid so that we can do this for multiple watersheds at a time 
-    uca_path = os.path.join(home, "Data", "Topography", "UCA","UCA_ET" + str(wsid))
-    is_exist = os.path.exists(uca_path)
-    if not is_exist:
-        os.makedirs(uca_path)
-    # crop the UCA to boundary and save it to the watershed specific uca folder 
-    uca_path_name = os.path.join(uca_path, "uca.tif")
-    crop_to_boundary(uca, boundary, uca_path_name)
-
-    # start a list to collect rows in form of dictionaries
-    row_list = []
-
-    for image in et_file_list: 
-
-        # check for missing data within the boundary and if there is missing data skip to the next image
-        # otherwise the function returns the image and transform 
-        missing_data = check_missing_data(image, boundary['geometry'])
-        if missing_data == False:
-            #print(K)
-            continue
-
-        # if there is no missing data, check if there is a UCA raster that matches the new cropped NDVI 
-        # if not, resample the UCA to match the cropped NDVI 
-        uca_files = glob(os.path.join(uca_path, "*.tif"))
-        for file in uca_files:
-            check = check_metadata(file, image, missing_data[0], missing_data[1])
-            if check == True: 
-                matching_uca = file
-                break
-            else:
-                matching_uca = False
-        if matching_uca == False:
-            uca_out = os.path.join(uca_path, "uca" + str(len(uca_files) + 1) + ".tif")
-            resample_to_match_io(os.path.join(uca_path, "uca.tif"), uca_out, image, missing_data[0], missing_data[1], "bilinear")
-            matching_uca = uca_out
-           
-        # classify upslope vs downslope pixels in the resampled UCA 
-        upslope_mask, downslope_mask = classify_uca(matching_uca, missing_data[0])
-        
-        # take the average ndvi for upslope and downslope and find the ratio 
-        ET = calculate_ratio_et(missing_data[0], upslope_mask, downslope_mask)
-
-        # get the date 
-        date = os.path.basename(image)[52:65]
-        # create a dictionary 
-        dict_row = {'Date': date, 'Sensor':"ECOSTRESS", 'WSID':wsid, 'Upslope_ET':ET[0], 'Downslope_ET':ET[1], 'RatioDownUp_ET':ET[2], 'SD_ET':ET[3], 'Avg_ET':ET[4]}
-        row_list.append(dict_row)
-    
-    # put everything in a dataframe
-    df = pd.DataFrame(row_list)
-
-    # save the dataframe 
-    et_path = os.path.join(home, "Data", "Evapotranspiration", "catchment_et_metrics")
-    df.to_csv(os.path.join(et_path, "ratio_et_" + str(wsid) + ".csv"))
-
-    return('finished ' + str(wsid))
-
-
-def summarize_et_catchment(filepath):
-    # Calculate the average daytime and nightime ET, ratioDownslopeUpslope, and SD 
-    # Input
-    # filepath = csv corresponding to one hw catchment with et summarized for all clear sky images 
-    # Output = a dictionary with summarized metrics. To be combined with other catchment ids later 
-    if os.path.getsize(filepath)==0:
-        return
-    df = pd.read_csv(filepath)
-    if df.shape[0] == 0:
-        return
-    df['Hour'] = df['Date'].apply(str).str[7:9].apply(int) # get the hour 
-    df = df[(df['Hour']>=10) & (df['Hour'] <= 18)] # subset to peak daylight during the summer of 10 - 6 
-    if df.shape[0] == 0: 
-        return
-    ratio_avg = np.mean(df.RatioDownUp_ET)
-    sd_avg = np.mean(df.SD_ET)
-    avg_avg = np.mean(df.Avg_ET)
-    result = {'wsid':df.WSID.iloc[0], 'avg_et':avg_avg, 'sd_et':sd_avg, 'ratio_et':ratio_avg}
-    return result

@@ -56,7 +56,6 @@ df_concat = pd.concat([df, shape_gdf], axis=1)
 df_concat.to_csv(os.path.join(home, "Data", "lcmap_permanent_forest", "lcmap_headwater_pct_forest.csv"))
 
 
-
 # also find the permanent forest composition for all of the reference watersheds 
 shp = os.path.join(home, "Data", "Catchments", "Reference", "gages_ii",  "reference_keep_4326.shp")
 with fiona.open(shp) as src:
